@@ -4,6 +4,7 @@ package com.tubenotify.tubenotify_backend.auth.service.Impl;
 import com.tubenotify.tubenotify_backend.auth.dto.RegisterRequest;
 import com.tubenotify.tubenotify_backend.auth.mapper.AuthMapper;
 import com.tubenotify.tubenotify_backend.auth.service.AuthService;
+import com.tubenotify.tubenotify_backend.common.exception.UserAlreadyExistsException;
 import com.tubenotify.tubenotify_backend.user.dto.UserDto;
 import com.tubenotify.tubenotify_backend.user.entity.Role;
 import com.tubenotify.tubenotify_backend.user.entity.User;
@@ -32,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
     public UserDto register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalStateException("Registration failed: the provided email is already in use");
+            throw new UserAlreadyExistsException("An account with this email already exists");
         }
 
         User user = authMapper.mapRegisterRequestToUser(request);
