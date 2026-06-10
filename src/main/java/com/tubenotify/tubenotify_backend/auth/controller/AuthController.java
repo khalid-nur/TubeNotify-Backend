@@ -1,5 +1,7 @@
 package com.tubenotify.tubenotify_backend.auth.controller;
 
+import com.tubenotify.tubenotify_backend.auth.dto.LoginRequest;
+import com.tubenotify.tubenotify_backend.auth.dto.LoginResponse;
 import com.tubenotify.tubenotify_backend.auth.dto.RegisterRequest;
 import com.tubenotify.tubenotify_backend.auth.service.AuthService;
 import com.tubenotify.tubenotify_backend.common.response.ApiResponse;
@@ -34,6 +36,25 @@ public class AuthController {
         UserDto registeredUser = authService.register(request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.response(true, "User successful registered", registeredUser, 201));
+                .body(ApiResponse.response(true, "User successfully registered", registeredUser, 201));
     }
+
+    /**
+     * Authenticates a user and returns an access token
+     *
+     * @param loginRequest login request containing user credentials
+     * @return ResponseEntity containing ApiResponse with access token and user information
+     */
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest loginRequest
+    ) {
+
+        LoginResponse loginResponse = authService.login(loginRequest);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.response(true, "User successfully login", loginResponse, 200));
+
+    }
+
 }

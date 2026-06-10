@@ -93,4 +93,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
+
+    /**
+     * Handles InvalidCredentialsException with 401 UNAUTHORIZED status
+     */
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ErrorResponse handleInvalidCredentialsException(InvalidCredentialsException ex) {
+        log.error("Invalid credentials error: {}", ex.getMessage());
+        return ErrorResponse.builder()
+                .errorCode("INVALID_CREDENTIALS")
+                .statusCode(HttpStatus.UNAUTHORIZED.value())
+                .message(ex.getMessage())
+                .timestamp(Instant.now())
+                .build();
+    }
 }
