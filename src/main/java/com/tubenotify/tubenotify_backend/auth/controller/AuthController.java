@@ -4,8 +4,11 @@ import com.tubenotify.tubenotify_backend.auth.dto.LoginRequest;
 import com.tubenotify.tubenotify_backend.auth.dto.LoginResponse;
 import com.tubenotify.tubenotify_backend.auth.dto.RegisterRequest;
 import com.tubenotify.tubenotify_backend.auth.service.AuthService;
+import com.tubenotify.tubenotify_backend.common.cookie.RefreshTokenCookieService;
 import com.tubenotify.tubenotify_backend.common.response.ApiResponse;
 import com.tubenotify.tubenotify_backend.user.dto.UserDto;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+
+    private  final RefreshTokenCookieService refreshTokenCookieService;
 
     /**
      * Registers a new user account
@@ -47,14 +52,41 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
-            @Valid @RequestBody LoginRequest loginRequest
+            @Valid @RequestBody LoginRequest loginRequest, HttpServletResponse httpResponse
     ) {
 
-        LoginResponse loginResponse = authService.login(loginRequest);
+        LoginResponse loginResponse = authService.login(loginRequest,httpResponse);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.response(true, "User successfully login", loginResponse, 200));
 
     }
 
+    /**
+     * Refreshes the access token using the refresh token stored in the HTTP cookie
+     *
+     * @param request the incoming HTTP request containing the refresh token cookie
+     * @return ResponseEntity containing ApiResponse with a new access token and user information
+     */
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshAccessToken(
+            HttpServletRequest request
+    ) {
+
+        String refreshToken =
+                refreshTokenCookieService
+                        .getRefreshTokenFromCookies(request);
+
+        LoginResponse loginResponse =
+                authService.refreshAccessToken(refreshToken);
+
+        return ResponseEntity.ok(
+                ApiResponse.response(
+                        true,
+                        "Access token refreshed successfully",
+                        loginResponse,
+                        200
+                )
+        );
+    }
 }
