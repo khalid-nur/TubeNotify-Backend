@@ -31,6 +31,15 @@ public class JwtTokenService {
     @Value("${auth.token.accessExpirationInMils}")
     private long accessExpirationMs;
 
+    @Value("${auth.token.refreshExpirationInMils}")
+    private long refreshExpirationMs;
+
+    /**
+     * Generates a JWT access token for the given user
+     *
+     * @param userDetails the authenticated user's details
+     * @return a signed JWT access token
+     */
     public String generateToken(UserDetails userDetails) {
 
         String userEmail = userDetails.getUsername();
@@ -44,6 +53,32 @@ public class JwtTokenService {
         return buildToken(userEmail, accessExpirationMs, claims);
     }
 
+    /**
+     * Generates a JWT refresh token for the given user
+     *
+     * @param userDetails the authenticated user's details
+     * @return a signed JWT refresh token
+     */
+    public String generateRefreshToken(UserDetails userDetails) {
+
+        String userEmail = userDetails.getUsername();
+
+        Map<String, Object> claims = new HashMap<>();
+
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+
+
+        return  buildToken( userEmail, refreshExpirationMs, claims);
+    }
+
+    /**
+     * Extracts the username (email) from a JWT token
+     *
+     * @param token the JWT token
+     * @return the username (email) stored in the token
+     */
     public String getUsernameFromToken(String token) {
 
         return Jwts.parserBuilder()
@@ -54,6 +89,12 @@ public class JwtTokenService {
                 .getSubject();
     }
 
+    /**
+     * Validates a JWT token
+     *
+     * @param token the JWT token to validate
+     * @return true if the token is valid, false otherwise
+     */
     public boolean validateToken(String token) {
 
         try {
@@ -71,22 +112,12 @@ public class JwtTokenService {
         }
     }
 
-    private String buildToken(String subject, long expirationMs, Map<String, Object> claims) {
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(key(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    private Key key() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
-    }
-
-
+    /**
+     * Extracts the JWT token from the Authorization header of the request
+     *
+     * @param request the incoming HTTP request
+     * @return the JWT token string, or null if not present
+     */
     public String extractTokenFromRequest(HttpServletRequest request) {
 
         String bearerToken = request.getHeader("Authorization");
@@ -98,4 +129,33 @@ public class JwtTokenService {
 
         return null;
     }
+
+    /**
+     * Builds a signed JWT token with the given subject, expiration, and claims
+     *
+     * @param subject the subject of the token (email)
+     * @param expirationMs the token expiration time in milliseconds
+     * @param claims additional claims to include in the token
+     * @return a signed JWT token
+     */
+    private String buildToken(String subject, long expirationMs, Map<String, Object> claims) {
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(key(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    /**
+     * Builds the signing key from the configured JWT secret
+     *
+     * @return the signing Key
+     */
+    private Key key() {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+    }
+
 }
